@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TesteUnecont.Context.Entities
+namespace TesteUnecont.Api.Entities
 {
     public class LogEntry
     {

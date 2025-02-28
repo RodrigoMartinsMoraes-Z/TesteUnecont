@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 using TesteUnecont.Api.Services;
 
@@ -9,7 +10,7 @@ namespace TesteUnecont.Test
     public class LogConverterTest
     {
         [Fact]
-        public void ConvertLogCdnToAgora_DeveRetornar_LogConvertido()
+        public async Task ConvertLogCdnToAgora_DeveRetornar_LogConvertido()
         {
             //Arrange
             DateTime timeStamp = DateTime.UtcNow;
@@ -32,7 +33,7 @@ namespace TesteUnecont.Test
             LogConverter service = new LogConverter();
 
             //Act
-            var result = service.ConvertLogCdnToAgora(logCdn, timeStamp);
+            var result = await service.ConvertLogCdnToAgora(logCdn, timeStamp);
 
             //Assert
             Assert.Equal(logAgora, result);
