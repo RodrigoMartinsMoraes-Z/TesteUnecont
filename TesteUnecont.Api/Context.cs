@@ -10,6 +10,11 @@ namespace TesteUnecont.Api
     {
         public DbSet<LogEntry> LogEntries { get; set; }
 
+        public Context(DbContextOptions<Context> options) : base(options)
+        {
+        }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             _ = modelBuilder.Entity<LogEntry>(entity =>

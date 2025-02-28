@@ -54,37 +54,54 @@ namespace TesteUnecont.Api.Services
             return $"\r\n{str}";
         }
 
-        public Task<List<LogEntry>> ExtractLog(string log)
+        public async Task<List<LogEntry>> ExtractLog(string log)
         {
-            var lines = log.Replace('\"', ' ').Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = log.Replace('\"', ' ').Replace("%2F", string.Empty).Replace(Environment.NewLine, " ").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
             var logEntries = new List<LogEntry>();
-
             var logGuid = Guid.NewGuid();
 
-            foreach (var line in lines)
+            for (int i = 0; i < parts.Length; i += 4)
             {
-                var parts = line.Split('|');
+                if (i + 4 >= parts.Length)
+                    break; // Certifica-se de que há partes suficientes para formar uma entrada completa
 
-                if (parts.Length < 5) continue;
+                // Verifica se a última parte contém números seguidos pelo início de uma nova linha
+                string timeTakenPart = parts[i + 4];
+                string nextResponseSizePart = string.Empty;
 
-                var logEntry = new LogEntry
+                // Verifica se a parte 'timeTakenPart' contém espaço seguido do próximo valor
+                if (timeTakenPart.Contains(' '))
                 {
-                    Provider = "MINHA CDN",
-                    HttpMethod = parts[3].Trim().Split(' ')[0],
-                    StatusCode = int.Parse(parts[1].Trim()),
-                    UriPath = parts[3].Trim().Split(' ')[1].Trim(),
-                    TimeTaken = (int)Math.Round(decimal.Parse(parts[4].Trim(), CultureInfo.InvariantCulture)),
-                    ResponseSize = int.Parse(parts[0]),
-                    CacheStatus = parts[2].Trim() == "INVALIDATE" ? "REFRESH_HIT" : parts[2].Trim(),
-                    LogGuid = logGuid,
-                    TimeStamp = DateTime.UtcNow
-                };
+                    var timeTakenParts = timeTakenPart.Split(' ');
+                    timeTakenPart = timeTakenParts[0];
+                    nextResponseSizePart = timeTakenParts[1];
+                }
+
+                var logEntry = new LogEntry();
+                logEntry.Provider = "MINHA CDN";
+                logEntry.ResponseSize = int.Parse(parts[i].Trim());
+                logEntry.StatusCode = int.Parse(parts[i + 1].Trim());
+                logEntry.CacheStatus = parts[i + 2].Trim() == "INVALIDATE" ? "REFRESH_HIT" : parts[i + 2].Trim();
+                logEntry.HttpMethod = parts[i + 3].Trim().Split(' ')[0];
+                logEntry.UriPath = parts[i + 3].Trim().Split(' ')[1].Trim();
+                logEntry.TimeTaken = (int)Math.Round(
+                       decimal.Parse(timeTakenPart.Trim(), CultureInfo.InvariantCulture));
+                logEntry.LogGuid = logGuid;
+                logEntry.TimeStamp = DateTime.UtcNow;
 
                 logEntries.Add(logEntry);
+
+                // Ajusta o índice para lidar com a parte dividida
+                if (!string.IsNullOrEmpty(nextResponseSizePart))
+                {
+                    parts[i + 4] = nextResponseSizePart;
+                }
             }
 
-            return Task.FromResult(logEntries);
+            return logEntries;
         }
+
+
 
         private string ConvertCacheStatus(string status)
         {
